@@ -75,4 +75,31 @@ router.post("/api/posts", (req, res) => {
     });
 });
 
+// router.post("/api/posts/:id/comments", (req, res) => {
+//   const id = req.params.id;
+//   const posts = db.findById(id);
+//   console.log(posts);
+// });
+
+router.delete("/api/posts/:id", (req, res) => {
+  const id = req.body.id;
+  db.remove(id)
+    .then((post) => {
+      console.log("post:", post);
+      if (!post) {
+        res.status(404).json({
+          errorMessage: "The post with the specified ID does not exist.",
+        });
+      } else {
+        res.json(post);
+      }
+    })
+    .catch((error) => {
+      console.log(error);
+      res.status(500).json({
+        errorMessage: "The post could not be removed.",
+      });
+    });
+});
+
 module.exports = router;
