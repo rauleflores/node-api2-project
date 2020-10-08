@@ -1,3 +1,4 @@
+const { text } = require("express");
 const express = require("express");
 const db = require("../data/db");
 
@@ -75,16 +76,52 @@ router.post("/api/posts", (req, res) => {
     });
 });
 
-// router.post("/api/posts/:id/comments", (req, res) => {
-//   const id = req.params.id;
-//   const posts = db.findById(id);
-//   console.log(posts);
-// });
+router.post("/api/posts/:id/comments", (req, res) => {
+  const id = req.params.id;
+  const { text } = req.body;
+  db.findById(id)
+    .then((post) => {
+      if (post.length < 1) {
+        res.status(404).json({
+          errorMessage: "The post with the specified ID does not exist.",
+        });
+      } else if (post.length > 0 && !text) {
+        res.status(400).json({
+          errorMessage: "Please provide text for the comment.",
+        });
+      } else if (post.length > 0 && text) {
+        const newComment = {
+          text: text,
+          post_id: post[0].id,
+        };
+        console.log(newComment);
+        db.insertComment(newComment)
+          .then((insert) => {
+            res.status(201).json(insert);
+          })
+          .catch((error) => {
+            res.status(500).json({
+              errorMessage:
+                "There was an error while saving the comment to the database.",
+            });
+          });
+      } else {
+        return post;
+      }
+    })
+    .catch((error) => {
+      console.log(error);
+      res.status(500).json({
+        errorMessage: "The post information could not be retrieved.",
+      });
+    });
+});
 
 router.delete("/api/posts/:id", (req, res) => {
-  const id = req.body.id;
+  const id = req.params.id;
   db.remove(id)
     .then((post) => {
+      console.log(id);
       console.log("post:", post);
       if (!post) {
         res.status(404).json({
@@ -98,6 +135,43 @@ router.delete("/api/posts/:id", (req, res) => {
       console.log(error);
       res.status(500).json({
         errorMessage: "The post could not be removed.",
+      });
+    });
+});
+
+router.put("/api/posts/:id", (req, res) => {
+  const id = req.params.id;
+  const { title, contents } = req.body;
+  db.findById(id)
+    .then((post) => {
+      if (post.length < 1) {
+        res.status(404).json({
+          errorMessage: "The post with the specified ID does not exist.",
+        });
+      } else if (post.length > 0 && (!title || !contents)) {
+        res.status(400).json({
+          errorMessage: "Please provide title and/or contents for the post.",
+        });
+      } else if (post.length > 0 && title && contents) {
+        const updates = {
+          title: title,
+          contents: contents,
+        };
+        db.update(id, updates)
+          .then((updates) => {
+            res.status(201).json(updates);
+          })
+          .catch((error) => {
+            console.log(error);
+            res.status(500).json({
+              errorMessage: "The post information could not be modified.",
+            });
+          });
+      }
+    })
+    .catch((error) => {
+      res.status(500).json({
+        errorMessage: "The post information could not be retrieved.",
       });
     });
 });
